@@ -1,0 +1,122 @@
+Nakon sto smo gotovi sa tutorialom, da bi se pokrenula aplikacija potrebno je pokrenuti 4 komande:
+1) kubectl port-forward svc/api-gateway 9000:9000 --> pokretanje backend servisa
+2) kubectl port-forward svc/keycloak 8080:8080 --> pokretanje Login, authorizacija servisa
+3) kubectl port-forward svc/frontend 4200:80 --> pokretanje frontend servisa
+4) kubectl port-forward svc/grafana 3000:3000 --> pokretanje logova, metrics servisa, za pracenje kako nasa aplikacija, backend radi
+
+
+Da bi taj tutorial radio na windows machini, morao sam enablati "Expose daemon on tcp://localhost:2375 without TLS" unutar Docker Desktop aplikacije.. 
+
+Taj docker password "  <dockerPassword>${dockerPassword}</dockerPassword> " sam dobio na web stranici od dockera .. https://app.docker.com
+Isao sam pod "Personal access token" i tamo sam si kreirao novi "access token" i spremio tu vrijednost od access tokena ,, jer tu vrijednost se samo jedanput vidi  .. trenutni dockerPassword je "dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U" , al to se moze i promijeniti
+
+
+
+Cloud native buildpack automaticaly create docker images from your source code. This is industry standard
+
+This is the command to build microservices image and then push it to docker hub 
+
+mvn spring-boot:build-image -DskipTests -DdockerPassword="dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U"
+
+Then inside main "pom.xml" file, you can choose which modules you want to build images and deploy them to docker hub
+
+Also we need to add this lines of code to create microservices images and then push then to docker hub
+
+We add this inside main pom.xml file
+ <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+
+          <image>
+            <name>brodarnikola9/new-awesome-project${project.artifactId}</name>
+            <publish>true</publish>
+          </image>
+
+          <docker>
+            <host>tcp://localhost:2375</host>
+            <publishRegistry>
+              <username>brodarnikola9</username>
+              <password>Natalija_21?</password>
+            </publishRegistry>
+          </docker> 
+
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+NAKON TOGA TREBA SlOZITI LOCAL KUBERNETSS CLUSTER.. MI CEMO TO NAPRAVITI UZ POMOC " KIND "
+
+Zatim je trebalo dodati taj k8s folder, dodati kind folder i samo kopirate te codove unutar te dvije datoteke.. 
+Zatim je trebalo pokrenuti naredbu "./k8s/kind/create-kind-cluster.sh", da se kreira kubernets Kind cluster. 
+Tu naredbu sam pokrenuo uz pomoc git bash.
+Ta naredba ce preloadati sve potrebne docker slike u cluster, i to ce nam ustedjeti na vremenu skidanja slika, kada deployamo aplikaciju.
+
+
+Zatim zelimo deployati mysql i druge servise na kubernetss .. 
+
+primjer komande za deploy mysql: kubectl create deployment mysql --image=mysql:8.3.0 --port=3306 --replicas=1 --dry-run=client -o yaml
+
+Taj "--dry-run=client" nece deployati na produkciju, nece deployati za stvarno, nego sluzi samo za test.
+
+primjer komande da saznamo podatke o "2) Service" od mysql: kubectl create service clusterip mysql --tcp=3306:3306 --dry-run=client -o yaml
+
+primjer komande da zastitimo Password od usera unutar mysql ( Na taj nacin smo malo zastiti Password od glavnog usera unutar mysql.. 
+Naravno kasnije trebamo kopirati podatke od te komande u mysql.yaml file ): kubectl create secret generic mysql-secrets --from-literal=mysql_root_password=mysql --dry-run=client -o yaml 
+
+U pravilu da bi se neki kubernetss deployao trebamo deployati i napisati slijedece stvari za mysql 
+1) Deployment 2) Service, 3) Secret 4) PersistanceVolume 5) PersistanceVolumeClaims 6) ConfigMap 
+
+Kad smo jedanput napravili mysql.yaml file i stavili sve potrebne podatke unutar mysql.yaml file, onda trebamo to jos deployati u kubernets uz pomoc komande " kubectl apply -f mysql.yaml "
+
+Trebamo dobiti natrag takav response " 
+deployment.apps/mysql created
+service/mysql created
+secret/mysql-secrets created
+persistentvolume/mysql-pv created
+persistentvolumeclaim/mysql-pvc created
+configmap/mysql-initdb-config created
+" 
+
+Da bi provjerio dal rade svi servisi, yaml file unutar kubernetss cluster, mogu napisati naredbu "kubectl get all" ili "kubectl get secrets"
+
+Da bi provjerio dal mi radi mysql servis ili mysql.yaml file, mogu koristiti naredbe "kubectl get pods" i zatim jos "kubectl logs -f mysql-5f5c94d485-d55bx"
+
+Zatim moram napraviti port-forwarding s nase lokalne machine na kubernets cluster servis.. To radim uz pomoc komande " kubectl port-forward svc/mysql 3306:3306" .. Da bi saznao vrijednost porta mogu koristiti naredbu "kubectl get svc" .. I nakon toga moram jos napraviti instancu od mysql i staviti dobre podatke za "host, port, user, password" .. Mogu to napraviti unutar "intelijIdea" ili "mysql workbench"
+
+Npr unutar "mysql workbench programa" kreiram novu konekciju ( "host=localhost", "user=user", "password"="mysql" ) i nakon toga bih trebao vidjeti kreirane dvije baze podataka ( 1) invetory i 2) order )
+
+Nakon toga treba kopirati sve "yaml files" u "manifest/infrastructure" i kod frontend.yml promijeniti port iz 80 u 4200 .. 
+Nakong toga smo popravili par stvari u "code" , npr kod "api-gateway" smo promijenili classu "Routes (dodali da se vrijednosti mijenjaju iz application.properties)" , zatim dodali "lokiUrl" u "application.properties" file
+
+Then this is the command to build microservices image and then push it to docker hub 
+mvn spring-boot:build-image -DskipTests -DdockerPassword="dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U"
+Then inside main "pom.xml" file, you can choose which modules you want to build images and deploy them to docker hub
+
+Da bi deployali frontend na docker, ne mozemo nazalost uz pomoc spring cloud buildstack..
+1) Trebamo se pozicionirati na taj folder frontend 
+2) To radimo uz pomoc naredbe " docker build -t frontend ." Naravno prije te naredbe, treba kreirati "Dockerfile" sa dobrim komandama i dodati ".dockerignore" file sad dobrim komandama.. unutar ".dockerignore" staviti ".angular, dist, node_modules".
+
+3) Nakon toga treba dodati komandu "docker tag frontend:latest brodarnikola9(username na docker)/frontend:latest"
+
+
+4) Nakon toga ide komanda "docker push brodarnikola9(username na dockeru)/frontend:latest"
+
+5) U slucaju kad zelim nesto promijeniti i deployati promjene na UI, treba ponoviti svih tih 4 koraka i kasnije dodati jos dvije komande.. 
+   Prvo se treba pozicionirati (" cd .\k8s\manifests\applications\") do "frontend.yml" file i nakon toga idu dvije komande. Prva komanda je "kubectl delete -f frontend.yml" , a druga komanda je "kubectl apply -f frontend.yml" .. I nakon toga se budu deployale promejne
+
+Zatim treba apply, deployati sve "yaml" file na kubernetess sa naredbom "kubectl apply -f infrastructure"
+Zatim treba apply, deployati sve "yaml" file na kubernetess sa naredbom "kubectl apply -f applications"
+
+takoder na localhost:8080 se mozemo ulogirati sa "admin/admin" i pod meni stavku "realm" ukljuciti "user registration ON" 
+
+Kad napravim neke promjene u backend dijelu code i zelim to deployati to radim zu pomoc naredbe "mvn spring-boot:build-image -DdockerPassword=dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U" .. Naravno treba biti i docker CLI ( Desktop ) pokrenut .. Naravno u glavnom "pom.xml" treba biti stavljen Password od dockera, a to je "Natalija_21?"
