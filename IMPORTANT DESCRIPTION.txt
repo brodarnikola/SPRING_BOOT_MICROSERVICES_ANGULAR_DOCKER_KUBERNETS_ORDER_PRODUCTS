@@ -120,3 +120,27 @@ Zatim treba apply, deployati sve "yaml" file na kubernetess sa naredbom "kubectl
 takoder na localhost:8080 se mozemo ulogirati sa "admin/admin" i pod meni stavku "realm" ukljuciti "user registration ON" 
 
 Kad napravim neke promjene u backend dijelu code i zelim to deployati to radim zu pomoc naredbe "mvn spring-boot:build-image -DdockerPassword=dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U" .. Naravno treba biti i docker CLI ( Desktop ) pokrenut .. Naravno u glavnom "pom.xml" treba biti stavljen Password od dockera, a to je "Natalija_21?"
+Unutar glavnog "pom.xml" file, mogu po zelji neke module ukljuciti ili iskljuciti ( zavisi koje module zelim deployati )
+
+Question: please help i dont understand how the services are protected with such security as shown in the video as only the gateway will be protected but if we use services port directly then there are not protected
+
+Answer: The services inside Kubernetes cannot be accessed from outside as they are using ClusterIP, so it's fine if we just secure the API gateway which is the entry point of the system.
+
+Securing each and every service can also be done but that will complicate the project without any additional learnings, that's why I chose to go with this Approach
+
+Question: could you please explain why in this video you defined route class for implementing API Gateway, but another video implement it via application properties? for which 
+purpose each one is used?
+
+Answer: I am using Spring Cloud Gateway MVC in this video, there are some configurations missing in the MVC variant that's why I had to use the Java Config in this video.
+
+The previous tutorial I was using Spring Cloud Gateway that is based on Spring We flux, this project is more mature and provides all configuration through properties config.
+
+Question: I have followed several courses on microservices and I have seen that they define a microservice with the name config-server to centralize the configuration of the other microservices and also define another microservice for eureka server. 
+
+Could you explain me why you didn't make use of them? or in which cases they should be used and when not ?
+
+Answer: Eureka Server and Config Server can be used when you are not using Kubernetes.
+
+But when you are using Kubernetes both those features are not useful anymore because Kubernetes provides us service discovery out if the box and also it supports centralized configuration through Config Maps.
+
+So there is no need to do that for our project.
