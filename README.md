@@ -1,7 +1,5 @@
  
-## You can watch the tutorial on Youtube here
-
-How to launch this tutorial?  
+#  How to launch this tutorial?  
 1) kubectl port-forward svc/api-gateway 9000:9000 --> start backend servis
 2) kubectl port-forward svc/keycloak 8080:8080 --> start Login, authorization servis
 3) kubectl port-forward svc/frontend 4200:80 --> start frontend servis
@@ -119,3 +117,32 @@ To access the Grafana dashboards, you need to port-forward the grafana service t
 ```shell
 kubectl port-forward svc/grafana 3000:3000
 ``` 
+
+# Question:
+please help i dont understand how the services are protected with such security as shown in the video as only the gateway will be protected but if we use services port directly then there are not protected
+
+# Answer: 
+The services inside Kubernetes cannot be accessed from outside as they are using ClusterIP, so it's fine if we just secure the API gateway which is the entry point of the system.
+
+Securing each and every service can also be done but that will complicate the project without any additional learnings, that's why I chose to go with this Approach
+
+# Question:
+could you please explain why in this video you defined route class for implementing API Gateway, but another video implement it via application properties? for which 
+purpose each one is used?
+
+# Answer:
+I am using Spring Cloud Gateway MVC in this video, there are some configurations missing in the MVC variant that's why I had to use the Java Config in this video.
+
+The previous tutorial I was using Spring Cloud Gateway that is based on Spring We flux, this project is more mature and provides all configuration through properties config.
+
+# Question: 
+I have followed several courses on microservices and I have seen that they define a microservice with the name config-server to centralize the configuration of the other microservices and also define another microservice for eureka server. 
+
+Could you explain me why you didn't make use of them? or in which cases they should be used and when not ?
+
+# Answer:
+Eureka Server and Config Server can be used when you are not using Kubernetes.
+
+But when you are using Kubernetes both those features are not useful anymore because Kubernetes provides us service discovery out if the box and also it supports centralized configuration through Config Maps.
+
+So there is no need to do that for our project.
