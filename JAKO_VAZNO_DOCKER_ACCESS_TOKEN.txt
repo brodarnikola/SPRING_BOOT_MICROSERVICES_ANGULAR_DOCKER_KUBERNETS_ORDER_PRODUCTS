@@ -1,0 +1,15 @@
+To use the access token from your Docker CLI client:
+
+1. Run
+
+docker login -u brodarnikola9
+2. At the password prompt, enter the personal access token.
+
+dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U
+
+This is command to build and package the backend servirces into docker container
+
+mvn spring-boot:build-image -DdockerPassword=<your-docker-account-password>
+
+mvn spring-boot:build-image -DdockerPassword=dckr_pat_fy47SIOfI7IgD5YERy2-PNkAO9U
+
